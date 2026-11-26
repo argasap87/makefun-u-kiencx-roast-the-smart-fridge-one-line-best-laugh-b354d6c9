@@ -16,21 +16,28 @@ const MAX_CHARS = 160;
 
 // Gate guard: the sealed scorer requires /output/entry.txt to be UTF-8 text
 // of 1-160 characters, not only whitespace, on a single line.
-const charCount = [...LINE].length;
-if (charCount < 1 || charCount > MAX_CHARS) {
-  console.error(
-    `gate failed: entry is ${charCount} characters, must be 1-${MAX_CHARS}`,
-  );
-  process.exit(1);
+// validateLine() enforces that gate and returns the character count;
+// it exits non-zero with a clear stderr message if the gate would fail.
+function validateLine(line: string): number {
+  const charCount = [...line].length;
+  if (charCount < 1 || charCount > MAX_CHARS) {
+    console.error(
+      `gate failed: entry is ${charCount} characters, must be 1-${MAX_CHARS}`,
+    );
+    process.exit(1);
+  }
+  if (line.trim().length === 0) {
+    console.error("gate failed: entry is only whitespace");
+    process.exit(1);
+  }
+  if (line.includes("\n") || line.includes("\r")) {
+    console.error("gate failed: entry must be a single line");
+    process.exit(1);
+  }
+  return charCount;
 }
-if (LINE.trim().length === 0) {
-  console.error("gate failed: entry is only whitespace");
-  process.exit(1);
-}
-if (LINE.includes("\n") || LINE.includes("\r")) {
-  console.error("gate failed: entry must be a single line");
-  process.exit(1);
-}
+
+const charCount = validateLine(LINE);
 
 mkdirSync("/output", { recursive: true });
 writeFileSync("/output/entry.txt", LINE + "\n", "utf8");
